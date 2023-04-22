@@ -3,50 +3,67 @@
 #include "soc/soc.h"
 #include "soc/rtc_cntl_reg.h"
 #include "esp_camera.h"
+#include <ESP32Servo.h>
 
 // Replace with your network credentials
-const char* ssid = "WIFI_NAME";
-const char* password = "WIFI_PASSWORD";
+const char *ssid = "PROFESSORHULK";
+const char *password = "2864rahul.g.s..";
+
+// Define the pin for IR sensor input
+const int IR_PIN = 27;
+
+// Define the pin for the servo motor control
+const int SERVO_PIN = 17;
+
+// Create a servo object to control the servo motor
+Servo servoMotor;
 
 // server config
-String serverName = "BACKEND_SERVER_IP";
+String serverName = "16.16.128.78";
 String serverPath = "/api/recognition/recognize";
-const int serverPort = 80;
+const int serverPort = 8000;
 
 WiFiClient client;
 
 // CAMERA_MODEL_AI_THINKER
-#define PWDN_GPIO_NUM     32
-#define RESET_GPIO_NUM    -1
-#define XCLK_GPIO_NUM      0
-#define SIOD_GPIO_NUM     26
-#define SIOC_GPIO_NUM     27
+#define PWDN_GPIO_NUM 32
+#define RESET_GPIO_NUM -1
+#define XCLK_GPIO_NUM 0
+#define SIOD_GPIO_NUM 26
+#define SIOC_GPIO_NUM 27
 
-#define Y9_GPIO_NUM       35
-#define Y8_GPIO_NUM       34
-#define Y7_GPIO_NUM       39
-#define Y6_GPIO_NUM       36
-#define Y5_GPIO_NUM       21
-#define Y4_GPIO_NUM       19
-#define Y3_GPIO_NUM       18
-#define Y2_GPIO_NUM        5
-#define VSYNC_GPIO_NUM    25
-#define HREF_GPIO_NUM     23
-#define PCLK_GPIO_NUM     22
+#define Y9_GPIO_NUM 35
+#define Y8_GPIO_NUM 34
+#define Y7_GPIO_NUM 39
+#define Y6_GPIO_NUM 36
+#define Y5_GPIO_NUM 21
+#define Y4_GPIO_NUM 19
+#define Y3_GPIO_NUM 18
+#define Y2_GPIO_NUM 5
+#define VSYNC_GPIO_NUM 25
+#define HREF_GPIO_NUM 23
+#define PCLK_GPIO_NUM 22
 
-const int timerInterval = 30000;    // time between each HTTP POST image
-unsigned long previousMillis = 0;   // last time image was sent
+// const int timerInterval = 30000;    // time between each HTTP POST image
+// unsigned long previousMillis = 0;   // last time image was sent
 
-void setup() {
-  WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0); 
+void setup()
+{
+  WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0);
   Serial.begin(115200);
+
+  servoMotor.attach(SERVO_PIN);
+
+  // Set the IR pin as input
+  pinMode(IR_PIN, INPUT);
 
   WiFi.mode(WIFI_STA);
   Serial.println();
   Serial.print("Connecting to ");
   Serial.println(ssid);
-  WiFi.begin(ssid, password);  
-  while (WiFi.status() != WL_CONNECTED) {
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED)
+  {
     Serial.print(".");
     delay(500);
   }
@@ -77,106 +94,162 @@ void setup() {
   config.pixel_format = PIXFORMAT_JPEG;
 
   // init with high specs to pre-allocate larger buffers
-  if(psramFound()){
+  if (psramFound())
+  {
     config.frame_size = FRAMESIZE_SVGA;
-    config.jpeg_quality = 10;  //0-63 lower number means higher quality
+    config.jpeg_quality = 10; // 0-63 lower number means higher quality
     config.fb_count = 2;
-  } else {
+  }
+  else
+  {
     config.frame_size = FRAMESIZE_CIF;
-    config.jpeg_quality = 12;  //0-63 lower number means higher quality
+    config.jpeg_quality = 12; // 0-63 lower number means higher quality
     config.fb_count = 1;
   }
-  
+
   // camera init
   esp_err_t err = esp_camera_init(&config);
-  if (err != ESP_OK) {
+  if (err != ESP_OK)
+  {
     Serial.printf("Camera init failed with error 0x%x", err);
     delay(1000);
     ESP.restart();
   }
-
-  sendPhoto(); 
 }
 
-void loop() {
-  unsigned long currentMillis = millis();
-  if (currentMillis - previousMillis >= timerInterval) {
-    sendPhoto();
-    previousMillis = currentMillis;
+void loop()
+{
+  // Read the value from the IR sensor
+  int irValue = digitalRead(IR_PIN);
+  String label = "";
+
+  if (IR_PIN == HIGH)
+  {
+    label = sendPhoto();
+    Serial.print("Photo sent to Cloud");
+
+    if (label == "RECYCLABLE")
+    {
+      servoMotor.write(90); // set servo to 0 degree position
+      Serial.print("Recyclable Waste Segregated");
+    }
+    else if (label == "NON-RECYCLABLE")
+    {
+      Serial.print("Non-Recyclable Waste Segregated");
+    }
+    else if (label == "E-WASTE")
+    {
+      Serial.print("E-Waste Waste Segregated");
+    } else if (label == "")
+    {
+      Serial.print("Label Value wasn't updated!");
+    } 
+    else
+    {
+      Serial.print("Unknown Waste Type Detected!");
+    }
   }
+
+  delay(1000);
 }
 
-String sendPhoto() {
+/*
+Captures photo, sends to the server and
+return label class value as String.
+*/
+String sendPhoto()
+{
   String getAll;
   String getBody;
 
-  camera_fb_t * fb = NULL;
+  camera_fb_t *fb = NULL;
   fb = esp_camera_fb_get();
-  if(!fb) {
+  if (!fb)
+  {
     Serial.println("Camera capture failed");
     delay(1000);
     ESP.restart();
   }
-  
+
   Serial.println("Connecting to server: " + serverName);
 
-  if (client.connect(serverName.c_str(), serverPort)) {
-    Serial.println("Connection successful!");    
+  if (client.connect(serverName.c_str(), serverPort))
+  {
+    Serial.println("Connection successful!");
     String head = "--SWSRP\r\nContent-Disposition: form-data; name=\"imageFile\"; filename=\"esp32-cam.jpg\"\r\nContent-Type: image/jpeg\r\n\r\n";
     String tail = "\r\n--SWSRP--\r\n";
 
     uint32_t imageLen = fb->len;
     uint32_t extraLen = head.length() + tail.length();
     uint32_t totalLen = imageLen + extraLen;
-  
+
     client.println("POST " + serverPath + " HTTP/1.1");
     client.println("Host: " + serverName);
     client.println("Content-Length: " + String(totalLen));
     client.println("Content-Type: multipart/form-data; boundary=SWSRP");
     client.println();
     client.print(head);
-  
+
     uint8_t *fbBuf = fb->buf;
     size_t fbLen = fb->len;
-    for (size_t n=0; n<fbLen; n=n+1024) {
-      if (n+1024 < fbLen) {
+    for (size_t n = 0; n < fbLen; n = n + 1024)
+    {
+      if (n + 1024 < fbLen)
+      {
         client.write(fbBuf, 1024);
         fbBuf += 1024;
       }
-      else if (fbLen%1024>0) {
-        size_t remainder = fbLen%1024;
+      else if (fbLen % 1024 > 0)
+      {
+        size_t remainder = fbLen % 1024;
         client.write(fbBuf, remainder);
       }
-    }   
+    }
     client.print(tail);
-    
+
     esp_camera_fb_return(fb);
-    
+
     int timoutTimer = 10000;
     long startTimer = millis();
     boolean state = false;
-    
-    while ((startTimer + timoutTimer) > millis()) {
+
+    while ((startTimer + timoutTimer) > millis())
+    {
       Serial.print(".");
-      delay(100);      
-      while (client.available()) {
+      delay(100);
+      while (client.available())
+      {
         char c = client.read();
-        if (c == '\n') {
-          if (getAll.length()==0) { state=true; }
+        if (c == '\n')
+        {
+          if (getAll.length() == 0)
+          {
+            state = true;
+          }
           getAll = "";
         }
-        else if (c != '\r') { getAll += String(c); }
-        if (state==true) { getBody += String(c); }
+        else if (c != '\r')
+        {
+          getAll += String(c);
+        }
+        if (state == true)
+        {
+          getBody += String(c);
+        }
         startTimer = millis();
       }
-      if (getBody.length()>0) { break; }
+      if (getBody.length() > 0)
+      {
+        break;
+      }
     }
     Serial.println();
     client.stop();
     Serial.println(getBody);
   }
-  else {
-    getBody = "Connection to " + serverName +  " failed.";
+  else
+  {
+    getBody = "Connection to " + serverName + " failed.";
     Serial.println(getBody);
   }
   return getBody;
