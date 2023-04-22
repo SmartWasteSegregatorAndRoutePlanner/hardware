@@ -126,27 +126,27 @@ void loop()
   if (IR_PIN == HIGH)
   {
     label = sendPhoto();
-    Serial.print("Photo sent to Cloud");
+    Serial.println("Photo sent to Backend API Server");
 
     if (label == "RECYCLABLE")
     {
       servoMotor.write(90); // set servo to 0 degree position
-      Serial.print("Recyclable Waste Segregated");
+      Serial.println("Recyclable Waste Segregated");
     }
     else if (label == "NON-RECYCLABLE")
     {
-      Serial.print("Non-Recyclable Waste Segregated");
+      Serial.println("Non-Recyclable Waste Segregated");
     }
     else if (label == "E-WASTE")
     {
-      Serial.print("E-Waste Waste Segregated");
+      Serial.println("E-Waste Waste Segregated");
     } else if (label == "")
     {
-      Serial.print("Label Value wasn't updated!");
+      Serial.println("Label Value wasn't updated!");
     } 
     else
     {
-      Serial.print("Unknown Waste Type Detected!");
+      Serial.println("Unknown Waste Type Detected!");
     }
   }
 
