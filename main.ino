@@ -181,7 +181,7 @@ String sendPhoto()
   if (client.connect(serverName.c_str(), serverPort))
   {
     Serial.println("Connection successful!");
-    String head = "--SWSRP\r\nContent-Disposition: form-data; name=\"imageFile\"; filename=\"esp32-cam.jpg\"\r\nContent-Type: image/jpeg\r\n\r\n";
+    String head = "--SWSRP\r\nContent-Disposition: form-data; name=\"image_file\"; filename=\"esp32-cam.jpg\"\r\nContent-Type: image/jpeg\r\n\r\n";
     String tail = "\r\n--SWSRP--\r\n";
 
     uint32_t imageLen = fb->len;
