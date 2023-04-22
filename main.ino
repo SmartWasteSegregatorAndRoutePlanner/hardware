@@ -121,27 +121,27 @@ void loop()
 {
   // Read the value from the IR sensor
   int irValue = digitalRead(IR_PIN);
-  String label = "";
+  String label_class = "";
 
   if (irValue == HIGH)
   {
-    label = sendPhoto();
-    Serial.println("Photo sent to Backend API Server");
+    label_class = sendPhoto();
+    Serial.println("Photo sent to Backend API Server and detected waste class as" + label);
 
-    if (label == "RECYCLABLE")
+    if (label_class == "\nRECYCLABLE")
     {
       servoMotor.write(90); // set servo to 0 degree position
       Serial.println("Recyclable Waste Segregated");
     }
-    else if (label == "NON-RECYCLABLE")
+    else if (label_class == "\nNON-RECYCLABLE")
     {
       Serial.println("Non-Recyclable Waste Segregated");
     }
-    else if (label == "E-WASTE")
+    else if (label_class == "\nE-WASTE")
     {
       Serial.println("E-Waste Waste Segregated");
     }
-    else if (label == "")
+    else if (label_class == "")
     {
       Serial.println("Label Value wasn't updated!");
     }
@@ -155,7 +155,7 @@ void loop()
     Serial.print("-");
   }
 
-  delay(1000);
+  delay(3000);
 }
 
 /*
