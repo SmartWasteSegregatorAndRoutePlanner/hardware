@@ -6,11 +6,11 @@
 #include <ESP32Servo.h>
 
 // Replace with your network credentials
-const char *ssid = "PROFESSORHULK";
-const char *password = "2864rahul.g.s..";
+const char* ssid = "WIFI_NAME";
+const char* password = "WIFI_PASSWORD";
 
 // Define the pin for IR sensor input
-const int IR_PIN = 27;
+const int IR_PIN = 12;
 
 // Define the pin for the servo motor control
 const int SERVO_PIN = 17;
@@ -19,7 +19,7 @@ const int SERVO_PIN = 17;
 Servo servoMotor;
 
 // server config
-String serverName = "16.16.128.78";
+String serverName = "BACKEND_SERVER_IP";
 String serverPath = "/api/recognition/recognize";
 const int serverPort = 8000;
 
@@ -123,7 +123,7 @@ void loop()
   int irValue = digitalRead(IR_PIN);
   String label = "";
 
-  if (IR_PIN == HIGH)
+  if (irValue == HIGH)
   {
     label = sendPhoto();
     Serial.println("Photo sent to Backend API Server");
@@ -140,14 +140,19 @@ void loop()
     else if (label == "E-WASTE")
     {
       Serial.println("E-Waste Waste Segregated");
-    } else if (label == "")
+    }
+    else if (label == "")
     {
       Serial.println("Label Value wasn't updated!");
-    } 
+    }
     else
     {
       Serial.println("Unknown Waste Type Detected!");
     }
+  }
+  else
+  {
+    Serial.print("-");
   }
 
   delay(1000);
