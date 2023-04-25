@@ -126,7 +126,7 @@ void loop()
   if (irValue == HIGH)
   {
     label_class = sendPhoto();
-    Serial.println("Photo sent to Backend API Server and detected waste class as" + label);
+    Serial.println("Photo sent to Backend API Server and detected waste class as" + label_class);
 
     if (label_class == "\nRECYCLABLE")
     {
